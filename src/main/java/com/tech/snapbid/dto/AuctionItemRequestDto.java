@@ -16,9 +16,9 @@ public class AuctionItemRequestDto {
     @NotBlank(message = "Description is required.")
     private String description;
 
-    @NotBlank(message = "Starting price is required.")
+    @NotNull(message = "Starting price is required.")
     @DecimalMin(value = "0.0", inclusive = false, message = "Starting price must be greater than 0.")
-    private String startingPrice;
+    private Double startingPrice;
 
     @NotNull(message = "Start time is required.")
     private LocalDateTime startTime;
