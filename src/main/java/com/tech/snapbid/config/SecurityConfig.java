@@ -33,11 +33,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/v1/auth/**",
-                    "v3/api-docs/**",
-                    "swagger-ui/**",
-                    "swagger-ui.html/"
-                
+                    "/api/v1/auction-items",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html/"
                 ).permitAll()
+                .requestMatchers("/api/v1/seller/auction-items/**").hasRole("SELLER")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
