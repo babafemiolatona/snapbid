@@ -2,6 +2,7 @@ package com.tech.snapbid.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,12 +17,16 @@ import com.tech.snapbid.mapper.AuctionItemMapper;
 import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.User;
 import com.tech.snapbid.repository.AuctionItemRepository;
+import com.tech.snapbid.repository.UserRepository;
 
 @Service
 public class AuctionItemServiceImpl implements AuctionItemService {
 
     @Autowired
     private AuctionItemRepository auctionItemRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public AuctionItemResponseDto createAuctionItem(User seller, AuctionItemRequestDto dto) {
@@ -64,7 +69,7 @@ public class AuctionItemServiceImpl implements AuctionItemService {
 
     @Override
     public Page<AuctionItemResponseDto> getAllAuctionItemsBySeller(User seller, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<AuctionItem> auctionItems = auctionItemRepository.findBySeller(seller, pageable);
         return auctionItems.map(AuctionItemMapper::toDto);
     }
@@ -78,6 +83,29 @@ public class AuctionItemServiceImpl implements AuctionItemService {
             throw new AccessDeniedException("You are not allowed to access this auction item");
         }
 
+        return AuctionItemMapper.toDto(item);
+    }
+
+    @Override
+    public Page<AuctionItemResponseDto> getAllAuctionItems(int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<AuctionItem> auctionItems = auctionItemRepository.findAll(pageable);
+        return auctionItems.map(AuctionItemMapper::toDto);
+    }
+
+    @Override
+    public Page<AuctionItemResponseDto> getAllAuctionItemsBySellerId(Long sellerId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        User seller = userRepository.findById(sellerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Seller not found with id: " + sellerId));
+        Page<AuctionItem> auctionItems = auctionItemRepository.findBySeller(seller, pageable);
+        return auctionItems.map(AuctionItemMapper::toDto);
+    }
+
+    @Override
+    public AuctionItemResponseDto getPublicAuctionItemById(Long id) {
+        AuctionItem item = auctionItemRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Auction item not found with id: " + id));
         return AuctionItemMapper.toDto(item);
     }
 }

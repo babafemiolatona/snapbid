@@ -14,7 +14,11 @@ public interface AuctionItemService {
     AuctionItemResponseDto createAuctionItem(User seller, AuctionItemRequestDto dto);
     AuctionItemResponseDto updateAuctionItem(User seller, Long id, AuctionItemUpdateDto dto);
     ApiResponse deleteAuctionItem(User seller, Long id);
+    Page<AuctionItemResponseDto> getAllAuctionItems(int page, int size);
     Page<AuctionItemResponseDto> getAllAuctionItemsBySeller(User seller, int page, int size);
     AuctionItemResponseDto getAuctionItemById(User seller, Long id);
+    // Public/buyer-facing variants
+    Page<AuctionItemResponseDto> getAllAuctionItemsBySellerId(Long sellerId, int page, int size);
+    AuctionItemResponseDto getPublicAuctionItemById(Long id);
 
 }
