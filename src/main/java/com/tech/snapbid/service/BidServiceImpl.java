@@ -1,6 +1,7 @@
 package com.tech.snapbid.service;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -12,8 +13,13 @@ import org.springframework.stereotype.Service;
 
 import com.tech.snapbid.dto.BidResponseDto;
 import com.tech.snapbid.exceptions.ResourceNotFoundException;
+import com.tech.snapbid.exceptions.AuctionClosedException;
+import com.tech.snapbid.exceptions.AuctionCancelledException;
+import com.tech.snapbid.exceptions.BidTooLowException;
+import com.tech.snapbid.exceptions.AuctionNotStartedException;
 import com.tech.snapbid.mapper.BidMapper;
 import com.tech.snapbid.models.AuctionItem;
+import com.tech.snapbid.models.AuctionStatus;
 import com.tech.snapbid.models.Bid;
 import com.tech.snapbid.models.User;
 import com.tech.snapbid.repository.AuctionItemRepository;
@@ -33,33 +39,55 @@ public class BidServiceImpl implements BidService {
     @Autowired
     private BidRepository bidRepository;
 
+    @Override
     @Transactional
-    public BidResponseDto placeBid(Long auctionItemId, Double amount, User bidder) {
+    public BidResponseDto placeBid(Long auctionItemId, BigDecimal amount, User bidder) {
         AuctionItem item = auctionItemRepository.findById(auctionItemId)
             .orElseThrow(() -> new ResourceNotFoundException("Auction item not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (item.getStatus() == AuctionStatus.CLOSED) {
+            throw new AuctionClosedException("Auction closed");
+        }
+        if (item.getStatus() == AuctionStatus.CANCELLED) {
+            throw new AuctionCancelledException("Auction cancelled");
+        }
+        if (item.getStatus() == AuctionStatus.SCHEDULED && item.getStartTime().isAfter(now)) {
+            throw new AuctionNotStartedException("Auction not started");
+        }
+        if (item.getStatus() == AuctionStatus.SCHEDULED && !item.getStartTime().isAfter(now)) {
+            item.setStatus(AuctionStatus.OPEN);
+            auctionItemRepository.save(item);
+        }
+        if (now.isAfter(item.getEndTime())) {
+            throw new AuctionClosedException("Auction ended");
+        }
 
         if (item.getSeller().getId().equals(bidder.getId())) {
             throw new AccessDeniedException("Sellers cannot bid on their own items");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(item.getStartTime()) || now.isAfter(item.getEndTime())) {
-            throw new IllegalStateException("Auction is not active");
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount is required");
         }
 
         Bid highest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
-        double minAllowed = (highest != null ? highest.getAmount() : item.getStartingPrice()) + minBidIncrement;
-            if (amount < minAllowed) {
-                throw new IllegalArgumentException("Bid must be at least " + minAllowed);
-            }
+        double baseline = (highest != null ? highest.getAmount() : item.getStartingPrice());
+        double minAllowed = baseline + minBidIncrement;
+        double bidValue = amount.doubleValue();
 
-            Bid bid = new Bid();
-            bid.setAmount(amount);
-            bid.setBidder(bidder);
-            bid.setAuctionItem(item);
-            bidRepository.save(bid);
+        if (bidValue < minAllowed) {
+            throw new BidTooLowException("Bid must be >= " + minAllowed + " (current " + baseline + " + increment " + minBidIncrement + ")");
+        }
 
-            return BidMapper.mapToDto(bid);
+    Bid bid = new Bid();
+    bid.setAmount(bidValue);
+    bid.setBidder(bidder);
+    bid.setAuctionItem(item);
+    bidRepository.save(bid);
+
+    return BidMapper.mapToDto(bid);
     }
 
     @Override

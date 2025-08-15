@@ -73,6 +73,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ApiResponse(false, message), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(AuctionClosedException.class)
+    public ResponseEntity<ApiResponse> handleAuctionClosed(AuctionClosedException ex) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.GONE); // 410 Gone
+    }
+
+    @ExceptionHandler(AuctionCancelledException.class)
+    public ResponseEntity<ApiResponse> handleAuctionCancelled(AuctionCancelledException ex) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT); // 409 Conflict
+    }
+
+    @ExceptionHandler(BidTooLowException.class)
+    public ResponseEntity<ApiResponse> handleBidTooLow(BidTooLowException ex) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AuctionNotStartedException.class)
+    public ResponseEntity<ApiResponse> handleAuctionNotStarted(AuctionNotStartedException ex) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     private ResponseEntity<ApiResponse> buildErrorResponse(String message, HttpStatus status) {
         ApiResponse response = new ApiResponse(false, message);
         return new ResponseEntity<>(response, status);
