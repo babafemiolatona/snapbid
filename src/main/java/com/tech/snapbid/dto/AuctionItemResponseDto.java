@@ -14,6 +14,10 @@ public class AuctionItemResponseDto {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String sellerUsername;
+    private String status; 
+    private String winnerUsername;
+    private Double finalPrice;
+    private Long timeRemainingSeconds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
