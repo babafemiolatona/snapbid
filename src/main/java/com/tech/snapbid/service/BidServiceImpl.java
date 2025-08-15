@@ -53,12 +53,18 @@ public class BidServiceImpl implements BidService {
         if (item.getStatus() == AuctionStatus.CANCELLED) {
             throw new AuctionCancelledException("Auction cancelled");
         }
-        if (item.getStatus() == AuctionStatus.SCHEDULED && item.getStartTime().isAfter(now)) {
-            throw new AuctionNotStartedException("Auction not started");
+        if (item.getStatus() == AuctionStatus.SCHEDULED) {
+            // Scheduler should promote; enforce rule clearly
+            if (item.getStartTime().isAfter(now)) {
+                throw new AuctionNotStartedException("Auction not started");
+            } else {
+                // Start time passed but scheduler hasn't promoted yet; perform a safe inline promotion
+                item.setStatus(AuctionStatus.OPEN);
+                auctionItemRepository.save(item);
+            }
         }
-        if (item.getStatus() == AuctionStatus.SCHEDULED && !item.getStartTime().isAfter(now)) {
-            item.setStatus(AuctionStatus.OPEN);
-            auctionItemRepository.save(item);
+        if (item.getStatus() != AuctionStatus.OPEN) {
+            throw new AuctionClosedException("Bidding not allowed (status=" + item.getStatus() + ")");
         }
         if (now.isAfter(item.getEndTime())) {
             throw new AuctionClosedException("Auction ended");
