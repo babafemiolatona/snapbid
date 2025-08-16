@@ -39,6 +39,7 @@ public class SecurityConfig {
                     "/swagger-ui.html/"
                 ).permitAll()
                 .requestMatchers("/api/v1/seller/auction-items/**").hasRole("SELLER")
+                .requestMatchers("/api/v1/bids/**").hasRole("BIDDER")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

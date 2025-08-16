@@ -87,13 +87,13 @@ public class BidServiceImpl implements BidService {
             throw new BidTooLowException("Bid must be >= " + minAllowed + " (current " + baseline + " + increment " + minBidIncrement + ")");
         }
 
-    Bid bid = new Bid();
-    bid.setAmount(bidValue);
-    bid.setBidder(bidder);
-    bid.setAuctionItem(item);
-    bidRepository.save(bid);
+        Bid bid = new Bid();
+        bid.setAmount(bidValue);
+        bid.setBidder(bidder);
+        bid.setAuctionItem(item);
+        bidRepository.save(bid);
 
-    return BidMapper.mapToDto(bid);
+        return BidMapper.mapToDto(bid);
     }
 
     @Override
