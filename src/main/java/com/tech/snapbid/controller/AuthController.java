@@ -1,6 +1,7 @@
 package com.tech.snapbid.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,7 +26,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody UserRequestDto userRequestDto) {
         ApiResponse response = authService.register(userRequestDto);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
