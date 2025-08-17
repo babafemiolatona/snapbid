@@ -1,5 +1,6 @@
 package com.tech.snapbid.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -17,10 +18,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "auction_items")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class AuctionItem {
 
@@ -35,7 +42,7 @@ public class AuctionItem {
     private String description;
 
     @Column(nullable = false)
-    private Double startingPrice;
+    private BigDecimal startingPrice;
 
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -55,13 +62,14 @@ public class AuctionItem {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private AuctionStatus status = AuctionStatus.SCHEDULED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "winner_id")
     private User winner;
 
-    private Double finalPrice;
+    private BigDecimal finalPrice;
 
     @Version
     private Long version;

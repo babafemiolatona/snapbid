@@ -1,5 +1,6 @@
 package com.tech.snapbid.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import lombok.Data;
@@ -8,7 +9,7 @@ import lombok.Data;
 public class BidResponseDto {
 
     private Long id;
-    private Double amount;
+    private BigDecimal amount;
     private String bidderUsername;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -1,7 +1,9 @@
 package com.tech.snapbid.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,12 +20,17 @@ public class AuctionItemRequestDto {
 
     @NotNull(message = "Starting price is required.")
     @DecimalMin(value = "0.0", inclusive = false, message = "Starting price must be greater than 0.")
-    private Double startingPrice;
+    private BigDecimal startingPrice;
 
     @NotNull(message = "Start time is required.")
     private LocalDateTime startTime;
 
     @NotNull(message = "End time is required.")
     private LocalDateTime endTime;
+
+    @AssertTrue(message = "endTime must be after startTime")
+    public boolean isEndAfterStart() {
+        return startTime != null && endTime != null && endTime.isAfter(startTime);
+    }
 
 }

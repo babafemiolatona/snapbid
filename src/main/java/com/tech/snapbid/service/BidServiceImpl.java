@@ -31,7 +31,7 @@ import jakarta.transaction.Transactional;
 public class BidServiceImpl implements BidService {
 
     @Value("${auction.min-bid-increment:1.0}")
-    private Double minBidIncrement;
+    private BigDecimal minBidIncrement;
 
     @Autowired
     private AuctionItemRepository auctionItemRepository;
@@ -79,16 +79,17 @@ public class BidServiceImpl implements BidService {
         }
 
         Bid highest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
-        double baseline = (highest != null ? highest.getAmount() : item.getStartingPrice());
-        double minAllowed = baseline + minBidIncrement;
-        double bidValue = amount.doubleValue();
+        BigDecimal baseline = (highest != null ? highest.getAmount() : item.getStartingPrice());
+        BigDecimal minAllowed = baseline.add(minBidIncrement);
 
-        if (bidValue < minAllowed) {
-            throw new BidTooLowException("Bid must be >= " + minAllowed + " (current " + baseline + " + increment " + minBidIncrement + ")");
+        if (amount.compareTo(minAllowed) < 0) {
+            throw new BidTooLowException(
+                "Bid must be >= " + minAllowed +
+                " (current " + baseline + " + increment " + minBidIncrement + ")");
         }
 
         Bid bid = new Bid();
-        bid.setAmount(bidValue);
+        bid.setAmount(amount);
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
         bidRepository.save(bid);

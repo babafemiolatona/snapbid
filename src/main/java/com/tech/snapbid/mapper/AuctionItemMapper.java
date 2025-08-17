@@ -16,6 +16,13 @@ public class AuctionItemMapper {
         item.setStartTime(dto.getStartTime());
         item.setEndTime(dto.getEndTime());
         item.setSeller(seller);
+
+        if (item.getStatus() == null) {
+            item.setStatus(item.getStartTime() != null && !item.getStartTime().isAfter(java.time.LocalDateTime.now())
+                ? AuctionStatus.OPEN
+                : AuctionStatus.SCHEDULED);
+        }
+
         return item;
     }
 
