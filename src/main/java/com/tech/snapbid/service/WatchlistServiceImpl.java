@@ -82,8 +82,8 @@ public class WatchlistServiceImpl implements WatchlistService {
     @Override
     @Transactional(readOnly = true)
     public boolean isWatching(Long auctionItemId, User user) {
-        AuctionItem stub = AuctionItem.builder().id(auctionItemId).build();
-        return watchlistRepository.existsByUserAndAuctionItem(user, stub);
+        AuctionItem ref = auctionItemRepository.getReferenceById(auctionItemId);
+        return watchlistRepository.existsByUserAndAuctionItem(user, ref);
     }
 
     private WatchlistItemDto toDto(WatchList e) {
