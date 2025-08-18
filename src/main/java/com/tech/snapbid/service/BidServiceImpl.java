@@ -26,7 +26,7 @@ import com.tech.snapbid.realtime.RealtimePublisher;
 import com.tech.snapbid.repository.AuctionItemRepository;
 import com.tech.snapbid.repository.BidRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -93,7 +93,7 @@ public class BidServiceImpl implements BidService {
         bid.setAmount(amount);
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
-        bidRepository.save(bid);
+        bidRepository.saveAndFlush(bid);
 
         realtimePublisher.publishBid(
             BidUpdateDto.builder()
