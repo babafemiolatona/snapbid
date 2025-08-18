@@ -3,14 +3,15 @@ package com.tech.snapbid.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tech.snapbid.dto.AuctionClosedUpdateDto;
 import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.AuctionStatus;
 import com.tech.snapbid.models.Bid;
+import com.tech.snapbid.realtime.RealtimePublisher;
 import com.tech.snapbid.repository.AuctionItemRepository;
 import com.tech.snapbid.repository.BidRepository;
 
@@ -22,11 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AuctionClosingService {
 
-    @Autowired
-    private AuctionItemRepository auctionItemRepository;
-   
-    @Autowired
-    private BidRepository bidRepository;
+    private final AuctionItemRepository auctionItemRepository;
+    private final BidRepository bidRepository;
+    private final RealtimePublisher realtimePublisher;
 
     // Batch driver
     @Transactional
@@ -71,5 +70,14 @@ public class AuctionClosingService {
         }
         item.setStatus(AuctionStatus.CLOSED);
         auctionItemRepository.save(item);
+
+        realtimePublisher.publishClosed(
+            AuctionClosedUpdateDto.builder()
+                .auctionId(item.getId())
+                .winnerUsername(item.getWinner() != null ? item.getWinner().getUsername() : null)
+                .finalPrice(item.getFinalPrice())
+                .at(LocalDateTime.now())
+                .build()
+        );
     }
 }

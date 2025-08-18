@@ -2,7 +2,6 @@ package com.tech.snapbid.service;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.tech.snapbid.dto.BidResponseDto;
+import com.tech.snapbid.dto.BidUpdateDto;
 import com.tech.snapbid.exceptions.ResourceNotFoundException;
 import com.tech.snapbid.exceptions.AuctionClosedException;
 import com.tech.snapbid.exceptions.AuctionCancelledException;
@@ -22,22 +22,25 @@ import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.AuctionStatus;
 import com.tech.snapbid.models.Bid;
 import com.tech.snapbid.models.User;
+import com.tech.snapbid.realtime.RealtimePublisher;
 import com.tech.snapbid.repository.AuctionItemRepository;
 import com.tech.snapbid.repository.BidRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @Service
 public class BidServiceImpl implements BidService {
 
     @Value("${auction.min-bid-increment:1.0}")
     private BigDecimal minBidIncrement;
 
-    @Autowired
-    private AuctionItemRepository auctionItemRepository;
+    private final AuctionItemRepository auctionItemRepository;
 
-    @Autowired
-    private BidRepository bidRepository;
+    private final BidRepository bidRepository;
+
+    private final RealtimePublisher realtimePublisher;
 
     @Override
     @Transactional
@@ -54,11 +57,9 @@ public class BidServiceImpl implements BidService {
             throw new AuctionCancelledException("Auction cancelled");
         }
         if (item.getStatus() == AuctionStatus.SCHEDULED) {
-            // Scheduler should promote; enforce rule clearly
             if (item.getStartTime().isAfter(now)) {
                 throw new AuctionNotStartedException("Auction not started");
             } else {
-                // Start time passed but scheduler hasn't promoted yet; perform a safe inline promotion
                 item.setStatus(AuctionStatus.OPEN);
                 auctionItemRepository.save(item);
             }
@@ -93,6 +94,16 @@ public class BidServiceImpl implements BidService {
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
         bidRepository.save(bid);
+
+        realtimePublisher.publishBid(
+            BidUpdateDto.builder()
+                .auctionId(item.getId())
+                .bidId(bid.getId())
+                .amount(bid.getAmount())
+                .bidderUsername(bidder.getUsername())
+                .at(LocalDateTime.now())
+                .build()
+        );
 
         return BidMapper.mapToDto(bid);
     }
