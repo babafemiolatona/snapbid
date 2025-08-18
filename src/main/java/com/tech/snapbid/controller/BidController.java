@@ -1,6 +1,5 @@
 package com.tech.snapbid.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +19,15 @@ import com.tech.snapbid.models.User;
 import com.tech.snapbid.service.BidService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @PreAuthorize("hasRole('BIDDER')")
 @RequestMapping("/api/v1/bids")
+@RequiredArgsConstructor
 public class BidController {
 
-    @Autowired
-    private BidService bidService;
+    private final BidService bidService;
 
     @PostMapping("/auction/{auctionItemId}")
     public ResponseEntity<BidResponseDto> placeBid(

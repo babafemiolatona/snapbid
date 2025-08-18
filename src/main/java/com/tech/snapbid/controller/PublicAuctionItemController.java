@@ -1,6 +1,5 @@
 package com.tech.snapbid.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,12 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tech.snapbid.dto.AuctionItemResponseDto;
 import com.tech.snapbid.service.AuctionItemService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/auction-items")
+@RequiredArgsConstructor
 public class PublicAuctionItemController {
 
-    @Autowired
-    private AuctionItemService auctionItemService;
+    private final AuctionItemService auctionItemService;
     
     @GetMapping
     public ResponseEntity<Page<AuctionItemResponseDto>> getAllAuctionItems(

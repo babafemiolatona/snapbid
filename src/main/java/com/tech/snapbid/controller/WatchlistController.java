@@ -1,6 +1,5 @@
 package com.tech.snapbid.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,12 +16,14 @@ import com.tech.snapbid.dto.WatchlistItemDto;
 import com.tech.snapbid.models.User;
 import com.tech.snapbid.service.WatchlistService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/watchlist")
+@RequiredArgsConstructor
 public class WatchlistController {
 
-    @Autowired
-    private WatchlistService watchlistService;
+    private final WatchlistService watchlistService;
 
     @PostMapping("/{auctionItemId}")
     public ResponseEntity<ApiResponse> add(@PathVariable Long auctionItemId, @AuthenticationPrincipal User user) {

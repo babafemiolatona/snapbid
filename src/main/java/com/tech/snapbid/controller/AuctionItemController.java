@@ -1,6 +1,5 @@
 package com.tech.snapbid.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +23,15 @@ import com.tech.snapbid.models.User;
 import com.tech.snapbid.service.AuctionItemService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @PreAuthorize("hasRole('SELLER')")
 @RequestMapping("api/v1/seller/auction-items")
+@RequiredArgsConstructor
 public class AuctionItemController {
 
-    @Autowired
-    private AuctionItemService auctionItemService;
+    private final AuctionItemService auctionItemService;
 
     @PostMapping
     public ResponseEntity<AuctionItemResponseDto> createAuctionItem(
