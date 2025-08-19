@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.tech.snapbid.dto.BidResponseDto;
 import com.tech.snapbid.dto.BidUpdateDto;
+import com.tech.snapbid.dto.OutbidNotificationDto;
 import com.tech.snapbid.exceptions.ResourceNotFoundException;
 import com.tech.snapbid.exceptions.AuctionClosedException;
 import com.tech.snapbid.exceptions.AuctionCancelledException;
@@ -89,6 +90,7 @@ public class BidServiceImpl implements BidService {
                 " (current " + baseline + " + increment " + minBidIncrement + ")");
         }
 
+        Bid previousHighest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
         Bid bid = new Bid();
         bid.setAmount(amount);
         bid.setBidder(bidder);
@@ -104,6 +106,21 @@ public class BidServiceImpl implements BidService {
                 .at(LocalDateTime.now())
                 .build()
         );
+
+        if (previousHighest != null &&
+            previousHighest.getBidder() != null &&
+            !previousHighest.getBidder().getId().equals(bidder.getId())) {
+            realtimePublisher.publishOutbidAfterCommit(
+                previousHighest.getBidder().getUsername(),
+                OutbidNotificationDto.builder()
+                    .auctionId(item.getId())
+                    .yourLastBid(previousHighest.getAmount())
+                    .newHighestBid(bid.getAmount())
+                    .newHighestBidder(bidder.getUsername())
+                    .at(LocalDateTime.now())
+                    .build()
+            );
+        }
 
         return BidMapper.mapToDto(bid);
     }

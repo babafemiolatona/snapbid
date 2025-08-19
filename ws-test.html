@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Raw STOMP Test</title>
+<pre id="log"></pre>
+<script>
+const JWT = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYWJhZmVtaSIsInJvbGUiOiJST0xFX0JJRERFUiIsImlhdCI6MTc1NTU0NzI3MiwiZXhwIjoxNzU1NTgzMjcyfQ.u5Dwwsi7URJbi-ubdv3R23kjFiYw0YKVp2hY-CRT1T4";
+const AUCTION_ID = 22;
+const logEl = document.getElementById("log");
+function out(...a){ console.log(...a); logEl.textContent += a.join(" ") + "\n"; }
+const ws = new WebSocket("ws://localhost:8080/ws");
+ws.onopen = () => {
+  out("WebSocket OPEN");
+  const connectFrame =
+    "CONNECT\n" +
+    "accept-version:1.2\n" +
+    "host:localhost\n" +
+    "authorization:" + JWT + "\n\n" + "\0";
+  ws.send(connectFrame);
+  out("CONNECT sent");
+  // Delay subscribe until CONNECTED arrives (simplistic)
+};
+ws.onmessage = e => {
+  out("FRAME:", e.data.replace(/\0/g,"\\0"));
+  if (e.data.startsWith("CONNECTED")) {
+    const subFrame =
+      "SUBSCRIBE\n" +
+      "id:sub-bid\n" +
+      "destination:/topic/auction/" + AUCTION_ID + "/bid\n\n" + "\0";
+    ws.send(subFrame);
+    out("SUBSCRIBE (bid) sent");
+    const subClose =
+      "SUBSCRIBE\n" +
+      "id:sub-closed\n" +
+      "destination:/topic/auction/" + AUCTION_ID + "/closed\n\n" + "\0";
+    ws.send(subClose);
+    out("SUBSCRIBE (closed) sent");
+  }
+};
+ws.onclose = e => out("CLOSE", e.code, e.reason);
+ws.onerror = e => out("ERROR", e);
+</script>
