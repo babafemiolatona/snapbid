@@ -10,6 +10,7 @@ import lombok.Value;
 @Builder
 public class OutbidNotificationDto {
 
+    Long id;
     Long auctionId;
     BigDecimal yourLastBid;
     BigDecimal newHighestBid;

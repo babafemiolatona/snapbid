@@ -22,6 +22,7 @@ import com.tech.snapbid.mapper.BidMapper;
 import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.AuctionStatus;
 import com.tech.snapbid.models.Bid;
+import com.tech.snapbid.models.Notification;
 import com.tech.snapbid.models.User;
 import com.tech.snapbid.realtime.RealtimePublisher;
 import com.tech.snapbid.repository.AuctionItemRepository;
@@ -113,7 +114,7 @@ public class BidServiceImpl implements BidService {
             previousHighest.getBidder() != null &&
             !previousHighest.getBidder().getId().equals(bidder.getId())) {
 
-            notificationService.createOutbid(
+            Notification savedNotification = notificationService.createOutbid(
                 previousHighest.getBidder(),
                 item.getId(),
                 previousHighest.getAmount(),
@@ -124,6 +125,7 @@ public class BidServiceImpl implements BidService {
             realtimePublisher.publishOutbidAfterCommit(
                 previousHighest.getBidder().getUsername(),
                 OutbidNotificationDto.builder()
+                    .id(savedNotification.getId())
                     .auctionId(item.getId())
                     .yourLastBid(previousHighest.getAmount())
                     .newHighestBid(bid.getAmount())
