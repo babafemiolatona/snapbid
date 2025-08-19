@@ -12,6 +12,8 @@ import com.tech.snapbid.dto.OutbidNotificationDto;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,23 @@ public class RealtimePublisher {
             });
         } else {
             publishOutbid(previousBidderUsername, dto);
+        }
+    }
+
+    public void publishNotificationMeta(String username, long unreadCount) {
+        template.convertAndSendToUser(username, "/queue/notification-meta",
+                Map.of("unreadCount", unreadCount));
+    }
+
+    public void publishNotificationMetaAfterCommit(String username, long unreadCount) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() {
+                    publishNotificationMeta(username, unreadCount);
+                }
+            });
+        } else {
+            publishNotificationMeta(username, unreadCount);
         }
     }
 

@@ -1,6 +1,8 @@
 package com.tech.snapbid.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,5 +24,9 @@ public interface NotificationService {
     long unreadCount(User user);
     
     void markRead(User user, Long notificationId);
+
+    void markReadBatch(User user, List<Long> ids);
+
+    int markAllRead(User user, LocalDateTime ts);
     
 }

@@ -3,12 +3,17 @@ package com.tech.snapbid.controller;
 import com.tech.snapbid.dto.NotificationDto;
 import com.tech.snapbid.models.User;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,4 +46,16 @@ public class NotificationController {
         notificationService.markRead(user, id);
     }
 
+    @PostMapping("/mark-read")
+    public ResponseEntity<Void> markReadBatch(@AuthenticationPrincipal User user,
+                              @RequestBody List<Long> ids){
+        notificationService.markReadBatch(user, ids);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/mark-read/all")
+    public ResponseEntity<Integer> markAllRead(@AuthenticationPrincipal User user) {
+        int updated = notificationService.markAllRead(user, LocalDateTime.now());
+        return ResponseEntity.ok(updated);
+    }
 }
