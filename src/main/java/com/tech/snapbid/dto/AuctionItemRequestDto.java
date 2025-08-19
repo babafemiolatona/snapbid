@@ -3,6 +3,9 @@ package com.tech.snapbid.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -29,7 +32,9 @@ public class AuctionItemRequestDto {
     private LocalDateTime endTime;
 
     @AssertTrue(message = "endTime must be after startTime")
-    public boolean isEndAfterStart() {
+    @JsonIgnore
+    @Schema(hidden = true)
+    public boolean validateEndAfterStart() {
         return startTime != null && endTime != null && endTime.isAfter(startTime);
     }
 
