@@ -1,6 +1,7 @@
 package com.tech.snapbid.service;
 
 import com.tech.snapbid.dto.NotificationDto;
+import com.tech.snapbid.exceptions.ResourceNotFoundException;
 import com.tech.snapbid.models.Notification;
 import com.tech.snapbid.models.NotificationType;
 import com.tech.snapbid.models.User;
@@ -59,7 +60,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void markRead(User user, Long notificationId) {
         Notification n = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
         if (!n.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Not yours");
         }
