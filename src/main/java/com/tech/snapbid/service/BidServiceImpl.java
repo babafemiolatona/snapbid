@@ -43,6 +43,8 @@ public class BidServiceImpl implements BidService {
 
     private final RealtimePublisher realtimePublisher;
 
+    private final NotificationService notificationService;
+
     @Override
     @Transactional
     public BidResponseDto placeBid(Long auctionItemId, BigDecimal amount, User bidder) {
@@ -110,6 +112,15 @@ public class BidServiceImpl implements BidService {
         if (previousHighest != null &&
             previousHighest.getBidder() != null &&
             !previousHighest.getBidder().getId().equals(bidder.getId())) {
+
+            notificationService.createOutbid(
+                previousHighest.getBidder(),
+                item.getId(),
+                previousHighest.getAmount(),
+                bid.getAmount(),
+                bidder.getUsername()
+            );
+
             realtimePublisher.publishOutbidAfterCommit(
                 previousHighest.getBidder().getUsername(),
                 OutbidNotificationDto.builder()
