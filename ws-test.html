@@ -1,41 +1,103 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Raw STOMP Test</title>
-<pre id="log"></pre>
+<title>Multi WS STOMP Test</title>
+<style>
+body { font:14px system-ui, sans-serif; margin:1rem; }
+fieldset { margin:.5rem 0; }
+.conn { border:1px solid #888; padding:.5rem; margin:.75rem 0; }
+pre { background:#111; color:#0f0; padding:.5rem; max-height:220px; overflow:auto; font-size:12px; }
+label { margin-right:.75rem; display:inline-block; }
+input.jwt { width:640px; }
+</style>
+<h1>Multi WS STOMP Test</h1>
+<div>
+  <label>Auction ID <input id="auctionId" value="29"></label>
+  <label>WS URL <input id="wsUrl" value="ws://localhost:8080/ws" size="35"></label>
+  <button id="addConn">Add Connection</button>
+</div>
+<div id="connections"></div>
+
+<template id="tpl">
+  <div class="conn">
+    <fieldset>
+      <legend>Connection</legend>
+      <div>
+        <label>JWT <input class="jwt" placeholder="Bearer ey..." /></label>
+        <button class="connect">Connect</button>
+        <button class="disconnect" disabled>Disconnect</button>
+      </div>
+      <div>
+        <label><input type="checkbox" class="sub-bid" checked>bid</label>
+        <label><input type="checkbox" class="sub-status">status</label>
+        <label><input type="checkbox" class="sub-closed">closed</label>
+        <label><input type="checkbox" class="sub-outbid" checked>outbid</label>
+        <label><input type="checkbox" class="sub-meta" checked>meta</label>
+      </div>
+    </fieldset>
+    <pre class="log"></pre>
+  </div>
+</template>
+
 <script>
-const JWT = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJiYWJhZmVtaSIsInJvbGUiOiJST0xFX0JJRERFUiIsImlhdCI6MTc1NTU0NzI3MiwiZXhwIjoxNzU1NTgzMjcyfQ.u5Dwwsi7URJbi-ubdv3R23kjFiYw0YKVp2hY-CRT1T4";
-const AUCTION_ID = 22;
-const logEl = document.getElementById("log");
-function out(...a){ console.log(...a); logEl.textContent += a.join(" ") + "\n"; }
-const ws = new WebSocket("ws://localhost:8080/ws");
-ws.onopen = () => {
-  out("WebSocket OPEN");
-  const connectFrame =
-    "CONNECT\n" +
-    "accept-version:1.2\n" +
-    "host:localhost\n" +
-    "authorization:" + JWT + "\n\n" + "\0";
-  ws.send(connectFrame);
-  out("CONNECT sent");
-  // Delay subscribe until CONNECTED arrives (simplistic)
-};
-ws.onmessage = e => {
-  out("FRAME:", e.data.replace(/\0/g,"\\0"));
-  if (e.data.startsWith("CONNECTED")) {
-    const subFrame =
-      "SUBSCRIBE\n" +
-      "id:sub-bid\n" +
-      "destination:/topic/auction/" + AUCTION_ID + "/bid\n\n" + "\0";
-    ws.send(subFrame);
-    out("SUBSCRIBE (bid) sent");
-    const subClose =
-      "SUBSCRIBE\n" +
-      "id:sub-closed\n" +
-      "destination:/topic/auction/" + AUCTION_ID + "/closed\n\n" + "\0";
-    ws.send(subClose);
-    out("SUBSCRIBE (closed) sent");
+(function(){
+  const connectionsDiv = document.getElementById('connections');
+  document.getElementById('addConn').onclick = () => addConn();
+  function addConn() {
+    const node = document.getElementById('tpl').content.firstElementChild.cloneNode(true);
+    const logEl = node.querySelector('.log');
+    const auctionInput = document.getElementById('auctionId');
+    const wsUrlInput = document.getElementById('wsUrl');
+    const jwtInput = node.querySelector('.jwt');
+    const btnConnect = node.querySelector('.connect');
+    const btnDisconnect = node.querySelector('.disconnect');
+    const ck = cls => node.querySelector('.' + cls);
+    let ws, connected = false;
+    const out = (...a) => { const s=a.join(' '); console.log(s); logEl.textContent += s + '\n'; logEl.scrollTop=logEl.scrollHeight; };
+    out('INIT');
+    btnConnect.onclick = () => {
+      const jwt = jwtInput.value.trim();
+      if (!jwt.startsWith('Bearer ')) { out('ERROR: JWT must start with "Bearer "'); return; }
+      const auctionId = auctionInput.value.trim();
+      const wsUrl = wsUrlInput.value.trim();
+      out('Opening', wsUrl);
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => {
+        out('OPEN send CONNECT');
+        ws.send(
+          'CONNECT\n' +
+          'accept-version:1.2\n' +
+          'host:localhost\n' +
+          'authorization:' + jwt + '\n\n\0'
+        );
+      };
+      ws.onmessage = e => {
+        out('IN:', e.data.replace(/\0/g,'\\0'));
+        if (!connected && e.data.startsWith('CONNECTED')) {
+          connected = true;
+            subscribe(auctionId);
+            out('Subscribed auction', auctionId);
+            btnConnect.disabled = true;
+            btnDisconnect.disabled = false;
+        }
+      };
+      ws.onclose = e => out('CLOSE', e.code, e.reason||'');
+      ws.onerror = e => out('WS ERROR', e.message||e);
+    };
+    function subscribe(aid){
+      if (ck('sub-bid').checked)
+        ws.send('SUBSCRIBE\nid:bid-'+Date.now()+'\ndestination:/topic/auction/'+aid+'/bid\n\n\0');
+      if (ck('sub-status').checked)
+        ws.send('SUBSCRIBE\nid:status-'+Date.now()+'\ndestination:/topic/auction/'+aid+'/status\n\n\0');
+      if (ck('sub-closed').checked)
+        ws.send('SUBSCRIBE\nid:closed-'+Date.now()+'\ndestination:/topic/auction/'+aid+'/closed\n\n\0');
+      if (ck('sub-outbid').checked)
+        ws.send('SUBSCRIBE\nid:outbid-'+Date.now()+'\ndestination:/user/queue/outbid\n\n\0');
+      if (ck('sub-meta').checked)
+        ws.send('SUBSCRIBE\nid:meta-'+Date.now()+'\ndestination:/user/queue/notification-meta\n\n\0');
+    }
+    btnDisconnect.onclick = () => { if (ws && ws.readyState===WebSocket.OPEN) ws.close(); btnDisconnect.disabled = true; };
+    connectionsDiv.appendChild(node);
   }
-};
-ws.onclose = e => out("CLOSE", e.code, e.reason);
-ws.onerror = e => out("ERROR", e);
+  addConn();
+})();
 </script>

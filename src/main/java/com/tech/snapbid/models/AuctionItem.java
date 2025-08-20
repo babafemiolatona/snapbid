@@ -50,6 +50,8 @@ public class AuctionItem {
     @Column(nullable = false)
     private LocalDateTime endTime;
 
+    private LocalDateTime lastBidAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;

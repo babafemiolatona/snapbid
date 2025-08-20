@@ -46,6 +46,16 @@ public class RealtimePublisher {
         template.convertAndSendToUser(previousBidderUsername, "/queue/outbid", dto);
     }
 
+    public void publishBidAfterCommit(BidUpdateDto dto) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { publishBid(dto); }
+            });
+        } else {
+            publishBid(dto);
+        }
+    }
+
     public void publishOutbidAfterCommit(String previousBidderUsername, OutbidNotificationDto dto) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

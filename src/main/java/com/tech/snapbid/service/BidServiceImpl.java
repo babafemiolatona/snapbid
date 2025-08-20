@@ -27,7 +27,9 @@ import com.tech.snapbid.models.User;
 import com.tech.snapbid.realtime.RealtimePublisher;
 import com.tech.snapbid.repository.AuctionItemRepository;
 import com.tech.snapbid.repository.BidRepository;
+import com.tech.snapbid.utils.RetryExecutor;
 
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -39,34 +41,40 @@ public class BidServiceImpl implements BidService {
     private BigDecimal minBidIncrement;
 
     private final AuctionItemRepository auctionItemRepository;
-
     private final BidRepository bidRepository;
-
     private final RealtimePublisher realtimePublisher;
-
     private final NotificationService notificationService;
+    private final RetryExecutor retryExecutor;
+
+    @Value("${bid.optimistic.max-retries:5}")
+    private int maxRetries;
 
     @Override
-    @Transactional
     public BidResponseDto placeBid(Long auctionItemId, BigDecimal amount, User bidder) {
+        return retryExecutor.execute(
+            maxRetries,
+            () -> doPlaceBidAttempt(auctionItemId, amount, bidder)
+        );
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected BidResponseDto doPlaceBidAttempt(Long auctionItemId, BigDecimal amount, User bidder) {
         AuctionItem item = auctionItemRepository.findById(auctionItemId)
             .orElseThrow(() -> new ResourceNotFoundException("Auction item not found"));
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (item.getStatus() == AuctionStatus.CLOSED) {
-            throw new AuctionClosedException("Auction closed");
-        }
-        if (item.getStatus() == AuctionStatus.CANCELLED) {
-            throw new AuctionCancelledException("Auction cancelled");
-        }
-        if (item.getStatus() == AuctionStatus.SCHEDULED) {
-            if (item.getStartTime().isAfter(now)) {
-                throw new AuctionNotStartedException("Auction not started");
-            } else {
+        switch (item.getStatus()) {
+            case CLOSED -> throw new AuctionClosedException("Auction closed");
+            case CANCELLED -> throw new AuctionCancelledException("Auction cancelled");
+            case SCHEDULED -> {
+                if (item.getStartTime().isAfter(now)) {
+                    throw new AuctionNotStartedException("Auction not started");
+                }
                 item.setStatus(AuctionStatus.OPEN);
                 auctionItemRepository.save(item);
             }
+            default -> {}
         }
         if (item.getStatus() != AuctionStatus.OPEN) {
             throw new AuctionClosedException("Bidding not allowed (status=" + item.getStatus() + ")");
@@ -74,42 +82,41 @@ public class BidServiceImpl implements BidService {
         if (now.isAfter(item.getEndTime())) {
             throw new AuctionClosedException("Auction ended");
         }
-
         if (item.getSeller().getId().equals(bidder.getId())) {
             throw new AccessDeniedException("Sellers cannot bid on their own items");
         }
-
         if (amount == null) {
             throw new IllegalArgumentException("Amount is required");
         }
 
-        Bid highest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
-        BigDecimal baseline = (highest != null ? highest.getAmount() : item.getStartingPrice());
+        // Single highest query
+        Bid previousHighest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
+        BigDecimal baseline = previousHighest != null ? previousHighest.getAmount() : item.getStartingPrice();
         BigDecimal minAllowed = baseline.add(minBidIncrement);
-
         if (amount.compareTo(minAllowed) < 0) {
-            throw new BidTooLowException(
-                "Bid must be >= " + minAllowed +
+            throw new BidTooLowException("Bid must be >= " + minAllowed +
                 " (current " + baseline + " + increment " + minBidIncrement + ")");
         }
 
-        Bid previousHighest = bidRepository.findFirstByAuctionItemOrderByAmountDesc(item);
+        item.setLastBidAt(now);
+
         Bid bid = new Bid();
         bid.setAmount(amount);
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
         bidRepository.saveAndFlush(bid);
 
-        realtimePublisher.publishBid(
-            BidUpdateDto.builder()
-                .auctionId(item.getId())
-                .bidId(bid.getId())
-                .amount(bid.getAmount())
-                .bidderUsername(bidder.getUsername())
-                .at(LocalDateTime.now())
-                .build()
-        );
+        BidUpdateDto bidDto = BidUpdateDto.builder()
+            .auctionId(item.getId())
+            .bidId(bid.getId())
+            .amount(bid.getAmount())
+            .bidderUsername(bidder.getUsername())
+            .at(now)
+            .build();
 
+        realtimePublisher.publishBidAfterCommit(bidDto);
+
+        // Outbid notification if someone else was highest
         if (previousHighest != null &&
             previousHighest.getBidder() != null &&
             !previousHighest.getBidder().getId().equals(bidder.getId())) {
@@ -130,7 +137,7 @@ public class BidServiceImpl implements BidService {
                     .yourLastBid(previousHighest.getAmount())
                     .newHighestBid(bid.getAmount())
                     .newHighestBidder(bidder.getUsername())
-                    .at(LocalDateTime.now())
+                    .at(now)
                     .build()
             );
         }
