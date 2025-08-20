@@ -34,7 +34,7 @@ public class AuctionItemRequestDto {
     @AssertTrue(message = "endTime must be after startTime")
     @JsonIgnore
     @Schema(hidden = true)
-    public boolean validateEndAfterStart() {
+    public boolean isEndAfterStart() {
         return startTime != null && endTime != null && endTime.isAfter(startTime);
     }
 
