@@ -1,5 +1,7 @@
 package com.tech.snapbid.controller;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,11 @@ import com.tech.snapbid.dto.ApiResponse;
 import com.tech.snapbid.dto.AuctionItemRequestDto;
 import com.tech.snapbid.dto.AuctionItemResponseDto;
 import com.tech.snapbid.dto.AuctionItemUpdateDto;
+import com.tech.snapbid.dto.AuctionStatusUpdateDto;
+import com.tech.snapbid.exceptions.ResourceNotFoundException;
+import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.User;
+import com.tech.snapbid.repository.AuctionItemRepository;
 import com.tech.snapbid.service.AuctionItemService;
 
 import jakarta.validation.Valid;
@@ -32,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class AuctionItemController {
 
     private final AuctionItemService auctionItemService;
+    private final AuctionItemRepository auctionItemRepository;
 
     @PostMapping
     public ResponseEntity<AuctionItemResponseDto> createAuctionItem(
@@ -79,5 +86,21 @@ public class AuctionItemController {
     ) {
         ApiResponse response = auctionItemService.deleteAuctionItem(seller, id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/status")
+    public AuctionStatusUpdateDto getStatus(@PathVariable Long id) {
+        AuctionItem item = auctionItemRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Auction not found"));
+        LocalDateTime now = LocalDateTime.now();
+        long rem = Math.max(0, java.time.Duration.between(now, item.getEndTime()).getSeconds());
+        return AuctionStatusUpdateDto.builder()
+            .auctionId(item.getId())
+            .status(item.getStatus().name())
+            .endTime(item.getEndTime())
+            .timeRemainingSeconds(rem)
+            .extensionCount(item.getExtensionCount())
+            .at(now)
+            .build();
     }
 }

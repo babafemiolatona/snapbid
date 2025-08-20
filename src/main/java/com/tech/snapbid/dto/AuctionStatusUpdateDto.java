@@ -11,7 +11,8 @@ public class AuctionStatusUpdateDto {
 
     Long auctionId;
     String status;
-    Long timeRemainingSeconds;
+    LocalDateTime endTime;
+    long timeRemainingSeconds;
     LocalDateTime at;
-
+    int extensionCount;
 }

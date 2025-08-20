@@ -85,4 +85,18 @@ public class RealtimePublisher {
         }
     }
 
+    public void publishAuctionStatusAfterCommit(AuctionStatusUpdateDto dto) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { publishAuctionStatus(dto); }
+            });
+        } else {
+            publishAuctionStatus(dto);
+        }
+    }
+
+    public void publishAuctionStatus(AuctionStatusUpdateDto dto) {
+        template.convertAndSend("/topic/auction/" + dto.getAuctionId() + "/status", dto);
+    }
+
 }

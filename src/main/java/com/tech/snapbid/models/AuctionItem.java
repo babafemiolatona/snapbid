@@ -52,6 +52,9 @@ public class AuctionItem {
 
     private LocalDateTime lastBidAt;
 
+    @Column(nullable = false)
+    private int extensionCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;

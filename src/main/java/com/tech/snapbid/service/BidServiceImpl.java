@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.tech.snapbid.dto.AuctionStatusUpdateDto;
 import com.tech.snapbid.dto.BidResponseDto;
 import com.tech.snapbid.dto.BidUpdateDto;
 import com.tech.snapbid.dto.OutbidNotificationDto;
@@ -48,6 +49,15 @@ public class BidServiceImpl implements BidService {
 
     @Value("${bid.optimistic.max-retries:5}")
     private int maxRetries;
+
+    @Value("${auction.antiSniping.thresholdSeconds:60}")
+    private long antiSnipingThresholdSeconds;
+
+    @Value("${auction.antiSniping.extendSeconds:120}")
+    private long antiSnipingExtendSeconds;
+
+    @Value("${auction.antiSniping.maxExtensions:3}")
+    private int antiSnipingMaxExtensions;
 
     @Override
     public BidResponseDto placeBid(Long auctionItemId, BigDecimal amount, User bidder) {
@@ -105,6 +115,31 @@ public class BidServiceImpl implements BidService {
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
         bidRepository.saveAndFlush(bid);
+
+        // Anti-sniping extension
+        long remainingSeconds = java.time.Duration.between(now, item.getEndTime()).getSeconds();
+        boolean extended = false;
+        if (remainingSeconds <= antiSnipingThresholdSeconds
+                && remainingSeconds > 0
+                && item.getExtensionCount() < antiSnipingMaxExtensions) {
+
+            item.setEndTime(item.getEndTime().plusSeconds(antiSnipingExtendSeconds));
+            item.setExtensionCount(item.getExtensionCount() + 1);
+            extended = true;
+        }
+        if (extended) {
+            auctionItemRepository.saveAndFlush(item);
+            long newRemaining = java.time.Duration.between(now, item.getEndTime()).getSeconds();
+            realtimePublisher.publishAuctionStatusAfterCommit(
+                AuctionStatusUpdateDto.builder()
+                    .auctionId(item.getId())
+                    .status(item.getStatus().name())
+                    .endTime(item.getEndTime())
+                    .timeRemainingSeconds(newRemaining)
+                    .extensionCount(item.getExtensionCount())
+                    .build()
+            );
+        }
 
         BidUpdateDto bidDto = BidUpdateDto.builder()
             .auctionId(item.getId())
