@@ -7,12 +7,13 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.tech.snapbid.models.AuctionItem;
 import com.tech.snapbid.models.AuctionStatus;
 import com.tech.snapbid.models.User;
 
-public interface AuctionItemRepository extends JpaRepository<AuctionItem, Long> {
+public interface AuctionItemRepository extends JpaRepository<AuctionItem, Long>, JpaSpecificationExecutor<AuctionItem> {
 
     Page<AuctionItem> findBySeller(User seller, Pageable pageable);
 
