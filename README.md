@@ -96,10 +96,10 @@ bid.optimistic.max-retries=5
 
 ## Prerequisites
 To run the application, ensure you have the following installed:
-- Java 17+
-- Maven 3.9.10 (configured via Maven Wrapper)
-- PostgreSQL (database server running on localhost:5432)
-- Git (for cloning the repository)
+- **Java 17+**
+- **Maven 3.9.10** (configured via Maven Wrapper)
+- **PostgreSQL** (database server running on localhost:5432)
+- **Git** (for cloning the repository)
 
 ## Setup instructions
 1.  **Clone the repository**:
