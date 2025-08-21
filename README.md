@@ -36,6 +36,26 @@ An auction platform built with **Spring Boot**, **PostgreSQL**, and **WebSocket*
 - Pagination and sorting support
 - JPA Specification based dynamic querying
 
+### Anti-sniping
+- Prevents last-second bidding by extending auction end time
+- Configurable threshold (default 60 seconds) and extension time (default 120 seconds)
+- Maximum number of extensions per auction (default 3)
+- Example:
+  ```
+  Auction end:    14:00:00
+  Bid placed at:  13:59:00 (60s before end)
+  Result:         End time extended to 14:02:00
+                  Extension count increased by 1
+  ```
+- All connected clients receive real-time status updates via WebSocket
+- Configuration in application.properties:
+  ```properties
+  auction.antiSniping.thresholdSeconds=60   # Trigger window
+  auction.antiSniping.extendSeconds=120     # Extension duration
+  auction.antiSniping.maxExtensions=3       # Max extensions allowed
+  ```
+
+
 ## Project Structure
 ```
 com.fintech.bank_app
@@ -72,9 +92,6 @@ spring.datasource.password=${DB_PASSWORD}
 spring.jpa.hibernate.ddl-auto=update
 jwt.secret=${JWT_SECRET}
 bid.optimistic.max-retries=5
-auction.antiSniping.thresholdSeconds=60
-auction.antiSniping.extendSeconds=120
-auction.antiSniping.maxExtensions=3
 ```
 
 ## Prerequisites
@@ -170,6 +187,48 @@ The application will start on http://localhost:8080.
 - `POST /api/v1/notifications/{id}/read` — Mark notification as read
 - `POST /api/v1/notifications/mark-read` — Batch mark notifications as read
 - `POST /api/v1/notifications/mark-read/all` — Mark all as read
+
+## WebSocket Testing Guide
+
+### Quick Start
+1. Open `ws-test.html` in your browser
+2. Get JWT token from `/api/v1/auth/login`
+3. Enter WebSocket URL: `ws://localhost:8080/ws`
+4. Enter Auction ID and JWT
+5. Select subscriptions (bid, status, closed)
+6. Click "Connect"
+
+### Available Topics
+```javascript
+/topic/auction/{id}/bid     // New bids
+/topic/auction/{id}/status  // Anti-sniping updates
+/topic/auction/{id}/closed  // Auction end
+/user/queue/outbid         // Personal outbid notifications
+```
+
+## Sample Messages
+
+### New Bid
+```json
+{
+  "auctionId": 35,
+  "bidId": 42,
+  "amount": 300,
+  "bidderUsername": "user123",
+  "at": "2025-08-20T20:05:10.890Z"
+}
+```
+
+### Auction Status Update(Anti-sniping)
+```json
+{
+  "auctionId": 35,
+  "status": "OPEN",
+  "endTime": "2025-08-20T20:07:10.890Z",
+  "timeRemainingSeconds": 120,
+  "extensionCount": 1
+}
+```
 
 ## Testing
 - Run unit tests using:
