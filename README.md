@@ -85,7 +85,7 @@ com.fintech.bank_app
 
 ## Configuration
 Set in `application.properties` and `env.properties`:
-```
+```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/${DB_NAME}
 spring.datasource.username=${DB_USER}
 spring.datasource.password=${DB_PASSWORD}
