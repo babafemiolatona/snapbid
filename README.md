@@ -81,7 +81,7 @@ auction.antiSniping.maxExtensions=3
 To run the application, ensure you have the following installed:
 - Java 17+
 - Maven 3.9.10 (configured via Maven Wrapper)
-- PostgreSQL (database server running on localhost:5432)##
+- PostgreSQL (database server running on localhost:5432)
 - Git (for cloning the repository)
 
 ## Setup instructions
@@ -171,4 +171,16 @@ The application will start on http://localhost:8080.
 - `POST /api/v1/notifications/mark-read` — Batch mark notifications as read
 - `POST /api/v1/notifications/mark-read/all` — Mark all as read
 
+## Testing
+- Run unit tests using:
+```
+./mvnw test
+```
+- The test suite (AuctionAppApplicationTests.java) is currently minimal and can be expanded to cover services and controllers.
 
+## Contributing
+1. Fork the repository.
+2. Create a feature branch (git checkout -b feature/your-feature).
+3. Commit your changes (git commit -m "Add your feature").
+4. Push to the branch (git push origin feature/your-feature).
+5. Open a pull request.
