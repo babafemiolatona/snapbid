@@ -55,6 +55,11 @@ An auction platform built with **Spring Boot**, **PostgreSQL**, and **WebSocket*
   auction.antiSniping.maxExtensions=3       # Max extensions allowed
   ```
 
+### Proxy (Auto) Bidding
+- System automatically places bids on behalf of users up to their maximum amount
+- Prevents need for constant manual bidding
+- Works alongside anti-sniping feature
+
 
 ## Project Structure
 ```
