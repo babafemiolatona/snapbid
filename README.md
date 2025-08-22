@@ -56,9 +56,9 @@ An auction platform built with **Spring Boot**, **PostgreSQL**, and **WebSocket*
   ```
 
 ### Proxy (Auto) Bidding
-- System automatically places bids on behalf of users up to their maximum amount
-- Prevents need for constant manual bidding
-- Works alongside anti-sniping feature
+- Users can set maximum bid amount
+- System automatically places minimum increment bids
+- Prevents manual bid monitoring
 
 
 ## Project Structure
