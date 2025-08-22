@@ -206,7 +206,7 @@ The application will start on http://localhost:8080.
 /user/queue/outbid         // Personal outbid notifications
 ```
 
-## Sample Messages
+### Sample Messages
 
 ### New Bid
 ```json
