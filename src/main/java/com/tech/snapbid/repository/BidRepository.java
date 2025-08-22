@@ -1,6 +1,7 @@
 package com.tech.snapbid.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,4 +27,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     // Highest bid quick lookup
     Bid findFirstByAuctionItemOrderByAmountDesc(AuctionItem auctionItem);
+
+    Optional<Bid> findTopByAuctionItemIdOrderByAmountDesc(Long auctionItemId);
+
 }

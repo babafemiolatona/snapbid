@@ -22,5 +22,5 @@ public interface AuctionItemRepository extends JpaRepository<AuctionItem, Long>,
     // For promoting auctions whose start time has arrived
     List<AuctionItem> findTop100ByStatusAndStartTimeBeforeOrderByStartTimeAsc(AuctionStatus status, LocalDateTime cutoff);
 
-    Page<AuctionItem> findByStatusAndEndTimeBefore(AuctionStatus status,LocalDateTime cutoff,Pageable pageable);
+    Page<AuctionItem> findByStatusAndEndTimeBefore(AuctionStatus status, LocalDateTime cutoff, Pageable pageable);
 }

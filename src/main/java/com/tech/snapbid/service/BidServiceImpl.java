@@ -46,6 +46,7 @@ public class BidServiceImpl implements BidService {
     private final RealtimePublisher realtimePublisher;
     private final NotificationService notificationService;
     private final RetryExecutor retryExecutor;
+    private final ProxyBidService proxyBidService;
 
     @Value("${bid.optimistic.max-retries:5}")
     private int maxRetries;
@@ -115,6 +116,8 @@ public class BidServiceImpl implements BidService {
         bid.setBidder(bidder);
         bid.setAuctionItem(item);
         bidRepository.saveAndFlush(bid);
+
+        proxyBidService.processNewBid(auctionItemId, amount, bidder);
 
         // Anti-sniping extension
         long remainingSeconds = java.time.Duration.between(now, item.getEndTime()).getSeconds();
